@@ -9,7 +9,14 @@ class UserController {
   }
 
   async logout(req: IAuthenticatedRequest, res: Response) {
-    return res.status(200).json({ message: 'You have been logged out successfully' });
+    try {
+      const { user } = req;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await user!.logout();
+      return res.status(200).json({ message: 'You have been logged out successfully' });
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
   }
 }
 

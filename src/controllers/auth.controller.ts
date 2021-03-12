@@ -34,7 +34,7 @@ class AuthController {
       }
 
       return res.status(200).json({
-        accessToken: jwtService.sign({ _id: foundUser._id, username: foundUser.username }),
+        accessToken: jwtService.sign({ _id: foundUser._id, username: foundUser.username }, foundUser.personalKey),
       });
     } catch (error) {
       return res.status(500).json({ message: error.message });

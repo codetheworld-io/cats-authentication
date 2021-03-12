@@ -7,6 +7,7 @@ jest.mock('jsonwebtoken');
 describe('JwtService', () => {
   const secret = 'secret-string';
   const tokenLife = 'token-time-to-live';
+  const personalKey = 'personal-key';
   const payload: IUserPayload = {
     _id: 'id',
     username: 'username',
@@ -23,9 +24,9 @@ describe('JwtService', () => {
 
   describe('sign', () => {
     it('should call jwt.sign function', () => {
-      jwtService.sign(payload);
+      jwtService.sign(payload, personalKey);
 
-      expect(jwt.sign).toHaveBeenCalledWith(payload, secret, { expiresIn: tokenLife });
+      expect(jwt.sign).toHaveBeenCalledWith(payload, `${secret}${personalKey}`, { expiresIn: tokenLife });
     });
   });
 
@@ -34,10 +35,22 @@ describe('JwtService', () => {
       const token = 'token';
       jwt.verify.mockReturnValue(payload as never);
 
-      const result = jwtService.verify(token);
+      const result = jwtService.verify(token, personalKey);
       
       expect(result).toEqual(payload);
-      expect(jwt.verify).toHaveBeenCalledWith(token, secret);
+      expect(jwt.verify).toHaveBeenCalledWith(token, `${secret}${personalKey}`);
+    });
+  });
+
+  describe('decode', () => {
+    it('should call jwt.decode function', () => {
+      const token = 'token';
+      jwt.decode.mockReturnValue(payload as never);
+
+      const result = jwtService.decodePayload(token);
+      
+      expect(result).toEqual(payload);
+      expect(jwt.decode).toHaveBeenCalledWith(token);
     });
   });
 });

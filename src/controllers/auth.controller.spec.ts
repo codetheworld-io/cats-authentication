@@ -12,8 +12,10 @@ describe('AuthController', () => {
     _id: 'user-id',
     username: 'username',
   };
+  const personalKey = 'personal-key';
   const user = {
     ...payload,
+    personalKey,
     isPasswordValid: async () => Promise.resolve(true),
   } as unknown as IUserDocument;
 
@@ -139,7 +141,7 @@ describe('AuthController', () => {
       expect(res.json).toHaveBeenCalledWith({ accessToken: token });
       expect(userModelMock.findOne)
         .toHaveBeenCalledWith({ username: loginBody.username });
-      expect(jwtServiceMock.sign).toHaveBeenCalledWith(payload);
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith(payload, personalKey);
     });
 
     it('should response with status 500 when jwtService.sign function throws error', async () => {
@@ -155,7 +157,7 @@ describe('AuthController', () => {
       expect(res.json).toHaveBeenCalledWith({ message: error.message });
       expect(userModelMock.findOne)
         .toHaveBeenCalledWith({ username: loginBody.username });
-      expect(jwtServiceMock.sign).toHaveBeenCalledWith(payload);
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith(payload, personalKey);
     });
   });
 });

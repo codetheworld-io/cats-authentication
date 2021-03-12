@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { JsonWebTokenError } from 'jsonwebtoken';
 import userModel, { IUserDocument } from '../models/user.model';
 import jwtService from '../services/jwt.service';
 
@@ -16,14 +17,20 @@ class JwtGuardMiddleware {
 
       const token = authHeader.split(' ')[1];
       try {
-        const payload = jwtService.verify(token);
+        const payload = jwtService.decodePayload(token);
         const user = await userModel.findById(payload._id);
         if (!user) {
           throw new Error('User not found');
         }
+
+        jwtService.verify(token, user.personalKey);
+
         req.user = user;
         return next();
       } catch (error) {
+        if (error instanceof JsonWebTokenError) {
+          return res.status(403).json({ message: 'Access token is invalid' });
+        }
         return res.status(403).json({ message: 'Forbidden' });
       }
     };

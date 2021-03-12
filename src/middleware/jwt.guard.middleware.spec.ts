@@ -15,9 +15,11 @@ describe('JwtGuardMiddleware', () => {
     _id: 'user-id',
     username: 'username',
   };
+  const personalKey = 'personal-key';
   const user = {
     ...userPayload,
     name: 'name',
+    personalKey,
    } as unknown as IUserDocument;
 
   let middleware: RequestHandler;
@@ -58,11 +60,14 @@ describe('JwtGuardMiddleware', () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ message: 'Unauthorized' });
     expect(next).not.toHaveBeenCalled();
-    expect(jwtServiceMock.verify).not.toHaveBeenCalled();
+    expect(jwtServiceMock.decodePayload).not.toHaveBeenCalled();
     expect(userModelMock.findById).not.toHaveBeenCalled();
+    expect(jwtServiceMock.verify).not.toHaveBeenCalled();
   });
 
   it('should response with status 403 when token is not valid', async () => {
+    userModelMock.findById.mockResolvedValue(user);
+    jwtServiceMock.decodePayload.mockReturnValue(userPayload);
     jwtServiceMock.verify.mockImplementation(() => {
       throw new JsonWebTokenError('Token is not valid');
     });
@@ -70,27 +75,30 @@ describe('JwtGuardMiddleware', () => {
     await middleware(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'Access token is invalid' });
     expect(next).not.toHaveBeenCalled();
-    expect(jwtServiceMock.verify).toHaveBeenCalledWith(token);
-    expect(userModelMock.findById).not.toHaveBeenCalled();
+    expect(jwtServiceMock.decodePayload).toHaveBeenCalledWith(token);
+    expect(userModelMock.findById).toHaveBeenCalledWith(userPayload._id);
+    expect(jwtServiceMock.verify).toHaveBeenCalledWith(token, personalKey);
   });
 
   it('should response with status 403 when user not found', async () => {
     userModelMock.findById.mockResolvedValue(null);
-    jwtServiceMock.verify.mockReturnValue(userPayload);
+    jwtServiceMock.decodePayload.mockReturnValue(userPayload);
 
     await middleware(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith({ message: 'Forbidden' });
     expect(next).not.toHaveBeenCalled();
-    expect(jwtServiceMock.verify).toHaveBeenCalledWith(token);
+    expect(jwtServiceMock.decodePayload).toHaveBeenCalledWith(token);
     expect(userModelMock.findById).toHaveBeenCalledWith(userPayload._id);
+    expect(jwtServiceMock.verify).not.toHaveBeenCalled();
   });
 
   it('should call next and set user to req object when token is valid', async () => {
     userModelMock.findById.mockResolvedValue(user);
+    jwtServiceMock.decodePayload.mockReturnValue(userPayload);
     jwtServiceMock.verify.mockReturnValue(userPayload);
 
     await middleware(req, res, next);
@@ -99,7 +107,8 @@ describe('JwtGuardMiddleware', () => {
     expect(res.json).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalled();
     expect(req.user).toEqual(user);
-    expect(jwtServiceMock.verify).toHaveBeenCalledWith(token);
+    expect(jwtServiceMock.decodePayload).toHaveBeenCalledWith(token);
     expect(userModelMock.findById).toHaveBeenCalledWith(userPayload._id);
+    expect(jwtServiceMock.verify).toHaveBeenCalledWith(token, personalKey);
   });
 });

@@ -9,10 +9,10 @@ class JwtService {
   /**
    * @throws JsonWebTokenError
    */
-  sign(payload: IUserPayload): string {
+  sign(payload: IUserPayload, personalKey: string): string {
     return jwt.sign(
       payload,
-      process.env.SECRET as string,
+      this.createSecretString(personalKey),
       { expiresIn: process.env.TOKEN_LIFE },
     ) as string;
   }
@@ -20,8 +20,16 @@ class JwtService {
   /**
    * @throws JsonWebTokenError
    */
-  verify(token: string): IUserPayload {
-    return jwt.verify(token, process.env.SECRET as string) as unknown as IUserPayload;
+  verify(token: string, personalKey: string): IUserPayload {
+    return jwt.verify(token, this.createSecretString(personalKey)) as unknown as IUserPayload;
+  }
+
+  decodePayload(token: string): IUserPayload {
+    return jwt.decode(token) as unknown as IUserPayload;
+  }
+
+  private createSecretString(personalKey: string): string {
+    return `${process.env.SECRET}${personalKey}`;
   }
 }
 
